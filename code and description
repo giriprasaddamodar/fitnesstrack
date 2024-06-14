@@ -1,0 +1,88 @@
+
+This example includes endpoints for logging workouts and retrieving workout data. Note that in a real-world scenario, you would use Firebase for the backend, but for simplicity, we are using Flask and SQLite.
+
+### Python Code (Flask Backend)
+
+```python
+from flask import Flask, request, jsonify
+from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///fitness.db'
+db = SQLAlchemy(app)
+
+class Workout(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    activity = db.Column(db.String(100), nullable=False)
+    duration = db.Column(db.Integer, nullable=False)  # Duration in minutes
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+@app.route('/log_workout', methods=['POST'])
+def log_workout():
+    data = request.get_json()
+    new_workout = Workout(activity=data['activity'], duration=data['duration'])
+    db.session.add(new_workout)
+    db.session.commit()
+    return jsonify({"message": "Workout logged successfully!"}), 201
+
+@app.route('/get_workouts', methods=['GET'])
+def get_workouts():
+    workouts = Workout.query.all()
+    output = []
+    for workout in workouts:
+        workout_data = {
+            'activity': workout.activity,
+            'duration': workout.duration,
+            'timestamp': workout.timestamp
+        }
+        output.append(workout_data)
+    return jsonify(output)
+
+if __name__ == '__main__':
+    db.create_all()  # Create database and tables
+    app.run(debug=True)
+```
+
+### Output Example
+
+#### Logging a Workout
+
+To log a workout, you can send a POST request to the `/log_workout` endpoint with the workout details.
+
+```bash
+curl -X POST -H "Content-Type: application/json" -d '{"activity": "Running", "duration": 30}' http://127.0.0.1:5000/log_workout
+```
+
+**Response:**
+```json
+{
+    "message": "Workout logged successfully!"
+}
+```
+
+#### Retrieving Workouts
+
+To retrieve logged workouts, you can send a GET request to the `/get_workouts` endpoint.
+
+```bash
+curl -X GET http://127.0.0.1:5000/get_workouts
+```
+
+**Response:**
+```json
+[
+    {
+        "activity": "Running",
+        "duration": 30,
+        "timestamp": "2024-06-14T12:34:56.789Z"
+    },
+    {
+        "activity": "Cycling",
+        "duration": 45,
+        "timestamp": "2024-06-13T11:23:45.678Z"
+    }
+]
+```
+
+This basic example provides a starting point for building a more comprehensive fitness tracker app. The code includes endpoints for logging workouts and retrieving workout data, using Flask and SQLite for simplicity.
